@@ -1,0 +1,7 @@
+name: NerdWorld
+main: me.hammale.world.world
+version: 1.0
+commands:
+  nerd:
+    description:
+    usage: |

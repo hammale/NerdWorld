@@ -9,8 +9,10 @@ import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
+import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
 import org.bukkit.plugin.PluginDescriptionFile;
+import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class world extends JavaPlugin {
@@ -21,7 +23,8 @@ public class world extends JavaPlugin {
 	
 //	private final EpicPlayerListener playerListener = new EpicPlayerListener(this);
 //	private final EpicEntityListener entityListener = new EpicEntityListener(this);
-//	private final EpicBlockListener blockListener = new EpicBlockListener(this);
+	private final NerdBlock nerdblock = new NerdBlock(this);
+	private final NerdPlayer nerdplayer = new NerdPlayer(this);
 	
 	Logger log = Logger.getLogger("Minecraft");
 	
@@ -32,9 +35,9 @@ public class world extends JavaPlugin {
 		log.info("[NerdWorld] Version: " + pdfFile.getVersion() + " Enabled!");
 		checkWorld();
 		moniterRefresh();
-		//PluginManager pm = getServer().getPluginManager();
-		//pm.registerEvent(Event.Type.PLAYER_JOIN, playerListener, Priority.Normal, this);
-		//pm.registerEvent(Event.Type.PLAYER_RESPAWN, playerListener, Priority.Normal, this);
+		PluginManager pm = getServer().getPluginManager();
+		pm.registerEvent(Event.Type.SIGN_CHANGE, nerdblock, Priority.Normal, this);
+		pm.registerEvent(Event.Type.PLAYER_INTERACT, nerdplayer, Priority.Normal, this);
 
 	}
 	
@@ -93,11 +96,24 @@ public class world extends JavaPlugin {
 	}
 	
 	public void moniterRefresh(){
+		int time = getRate()-6000;
+		if(time <= 1200){
+			time = 1200;
+		}
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
 		    public void run() {
-		        refreshWorld();
+		        fiveMin();
 		    }
-		}, getRate(), getRate());
+		}, time, time);
+	}
+	
+	public void fiveMin(){
+		getServer().broadcastMessage(ChatColor.RED + "Refreshing " + getRefreshWorld() + " in 5 min!");
+		getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+		    public void run() {
+				refreshWorld();
+		    }
+		}, 6000);
 	}
 	
 	public void refreshWorld(){

@@ -5,12 +5,16 @@ import java.util.HashSet;
 import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
+import org.bukkit.block.Block;
+import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.event.Event;
 import org.bukkit.event.Event.Priority;
+import org.bukkit.material.Sign;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -102,18 +106,18 @@ public class world extends JavaPlugin {
 		}
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
 		    public void run() {
-		        fiveMin();
+		        threeMin();
 		    }
 		}, time, time);
 	}
 	
-	public void fiveMin(){
-		getServer().broadcastMessage(ChatColor.RED + "Refreshing " + getRefreshWorld() + " in 5 min!");
+	public void threeMin(){
+		getServer().broadcastMessage(ChatColor.RED + "Refreshing " + getRefreshWorld() + " in 3 min!");
 		getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 		    public void run() {
 				refreshWorld();
 		    }
-		}, 6000);
+		}, 3600L);
 	}
 	
 	public void refreshWorld(){
@@ -124,7 +128,24 @@ public class world extends JavaPlugin {
 			getServer().createWorld(new WorldCreator(s).environment(World.Environment.NORMAL));
 			addBackPlayers(s);
 			removed.clear();
+			addPortal(s);
 			getServer().broadcastMessage(ChatColor.GREEN + "Refresh complete!");
+	}
+	
+	public void addPortal(String s){
+		World w = getServer().getWorld(s);
+		Block b = w.getSpawnLocation().getBlock();
+		Block b1 = b.getRelative(BlockFace.UP, 1);
+		Block b2 = b1.getRelative(BlockFace.UP, 1);
+		Block b3 = b2.getRelative(BlockFace.NORTH, 1);
+		Block b4 = b3.getRelative(BlockFace.DOWN, 1);
+		b1.setTypeId(49);
+		b2.setTypeId(49);
+		b3.setTypeId(69);
+		b4.setType(Material.WALL_SIGN);
+		org.bukkit.block.Sign sign = (org.bukkit.block.Sign) b4.getState();
+		sign.setLine(0, "[GOTO]");
+		sign.setLine(1, "[HOME]");
 	}
 	
 	private void addBackPlayers(String s) {

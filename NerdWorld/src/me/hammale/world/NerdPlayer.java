@@ -19,19 +19,31 @@ public class NerdPlayer extends PlayerListener {
 	 }
 	
 	public void onPlayerInteract(PlayerInteractEvent e){
-		Player p = e.getPlayer();		
+		final Player p = e.getPlayer();		
 	    if ((e.getAction() == Action.RIGHT_CLICK_BLOCK) && (e.getClickedBlock().getTypeId() == 69)) {
-	    	Lever l = (Lever) e.getClickedBlock();
+	    	Lever l = (Lever) e.getClickedBlock().getState().getData();
 	    	Block initial = e.getClickedBlock().getRelative(l.getAttachedFace());
 	    	if(initial.getTypeId() == 49){
+	    		
 	    		Block down = initial.getRelative(BlockFace.DOWN, 1);
 	    		if(down.getTypeId() == 49){
-	    			Block sign = initial.getRelative(BlockFace.DOWN, 1);
-	    			if(sign.getType() == Material.SIGN){
-	    				org.bukkit.block.Sign s = (org.bukkit.block.Sign) sign.getState().getData();
+	    			Block sign = e.getClickedBlock().getRelative(BlockFace.DOWN, 1);
+	    			if(sign.getType() == Material.WALL_SIGN){
+	    				org.bukkit.block.Sign s = (org.bukkit.block.Sign) sign.getState();
 	    				if(s.getLine(0).equalsIgnoreCase("[GOTO]") && s.getLine(1).equalsIgnoreCase("[" + plugin.getRefreshWorld() +"]")){
 	    					p.sendMessage(ChatColor.GREEN + "Teleporting to " + plugin.getRefreshWorld() + "...");
-	    					p.teleport(plugin.getServer().getWorld(plugin.getRefreshWorld()).getSpawnLocation());
+	    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+	    					    public void run() {
+	    	    					p.teleport(plugin.getServer().getWorld(plugin.getRefreshWorld()).getSpawnLocation());
+	    					    }
+	    					}, 60L);
+	    				}else if(s.getLine(0).equalsIgnoreCase("[GOTO]") && s.getLine(1).equalsIgnoreCase("[HOME]")){
+	    					p.sendMessage(ChatColor.GREEN + "Teleporting to " + plugin.getServer().getWorlds().get(0).getName() + "...");
+	    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+	    					    public void run() {
+	    	    					p.teleport(plugin.getServer().getWorlds().get(0).getSpawnLocation());
+	    					    }
+	    					}, 60L);
 	    				}	
 	    			}
 	    		}

@@ -30,21 +30,24 @@ public class NerdPlayer extends PlayerListener {
 	    			Block sign = e.getClickedBlock().getRelative(BlockFace.DOWN, 1);
 	    			if(sign.getType() == Material.WALL_SIGN){
 	    				org.bukkit.block.Sign s = (org.bukkit.block.Sign) sign.getState();
-	    				if(s.getLine(0).equalsIgnoreCase("[GOTO]") && s.getLine(1).equalsIgnoreCase("[" + plugin.getRefreshWorld() +"]")){
-	    					p.sendMessage(ChatColor.GREEN + "Teleporting to " + plugin.getRefreshWorld() + "...");
-	    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-	    					    public void run() {
-	    	    					p.teleport(plugin.getServer().getWorld(plugin.getRefreshWorld()).getSpawnLocation());
-	    					    }
-	    					}, 60L);
-	    				}else if(s.getLine(0).equalsIgnoreCase("[GOTO]") && s.getLine(1).equalsIgnoreCase("[HOME]")){
+	    				if(s.getLine(0).equals("[GOTO]") && s.getLine(1).equals("[HOME]")){
 	    					p.sendMessage(ChatColor.GREEN + "Teleporting to " + plugin.getServer().getWorlds().get(0).getName() + "...");
 	    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
 	    					    public void run() {
 	    	    					p.teleport(plugin.getServer().getWorlds().get(0).getSpawnLocation());
 	    					    }
-	    					}, 60L);
+	    					}, 30L);
 	    				}	
+	    				else if(s.getLine(0).equals("[GOTO]") && s.getLine(1) != null && s.getLine(1).contains("[") && s.getLine(1).contains("]")){ 
+	    					String s1 = s.getLine(1).replace("[", "");
+	    					final String s2 = s1.replace("]", "");
+	    					p.sendMessage(ChatColor.GREEN + "Teleporting to " + s2 + "...");
+	    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+	    					    public void run() {
+	    	    					p.teleport(plugin.getServer().getWorld(s2).getSpawnLocation());
+	    					    }
+	    					}, 30L);
+	    				}
 	    			}
 	    		}
 	    	}

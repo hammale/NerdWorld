@@ -48,6 +48,11 @@ public class world extends JavaPlugin {
 	public void checkWorld(){
 		if(getServer().getWorld(getRefreshWorld()) == null){
 			getServer().createWorld(new WorldCreator(getRefreshWorld()).environment(World.Environment.NORMAL));
+			addPortal(getRefreshWorld());
+		}
+		if(getServer().getWorld(getRefreshWorld1()) == null){
+			getServer().createWorld(new WorldCreator(getRefreshWorld1()).environment(World.Environment.NORMAL));
+			addPortal(getRefreshWorld1());
 		}
 	}
 	
@@ -57,8 +62,12 @@ public class world extends JavaPlugin {
 		    config.options().copyDefaults(false);
 		    String path = "RefreshRate";
 		    String path1 = "RefreshWorld";
-		    config.addDefault(path, 180);
-		    config.addDefault(path1, "refreshworld");
+		    String path2 = "RefreshRateSecond";
+		    String path3 = "RefreshWorldSecond";
+		    config.addDefault(path, 720);
+		    config.addDefault(path1, "mobs");
+		    config.addDefault(path2, 4320);
+		    config.addDefault(path3, "nomobs");
 		    config.options().copyDefaults(true);
 		    saveConfig();
 	    }
@@ -92,6 +101,19 @@ public class world extends JavaPlugin {
 	    return message;
 	}
 	
+	public int getRate1(){
+	    config = getConfig();
+	    int amnt = config.getInt("RefreshRateSecond");
+	    amnt = (amnt*60)*20;
+	    return amnt;
+	}
+	
+	public String getRefreshWorld1(){
+	    config = getConfig();
+	    String message = config.getString("RefreshWorldSecond"); 
+	    return message;
+	}
+	
 	@Override
 	public void onDisable() {
 		PluginDescriptionFile pdfFile = this.getDescription();
@@ -106,23 +128,32 @@ public class world extends JavaPlugin {
 		}
 		getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
 		    public void run() {
-		        threeMin();
+		        threeMin(getRefreshWorld());
 		    }
 		}, time, time);
+		
+		int time2 = getRate1()-6000;
+		if(time2 <= 1200){
+			time2 = 1200;
+		}
+		getServer().getScheduler().scheduleSyncRepeatingTask(this, new Runnable() {
+		    public void run() {
+		        threeMin(getRefreshWorld1());
+		    }
+		}, time2, time2);
 	}
 	
-	public void threeMin(){
-		getServer().broadcastMessage(ChatColor.RED + "Refreshing " + getRefreshWorld() + " in 3 min!");
+	public void threeMin(final String s){
+		getServer().broadcastMessage(ChatColor.RED + "Refreshing " + s + " in 3 min!");
 		getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
 		    public void run() {
-				refreshWorld();
+				refreshWorld(s);
 		    }
 		}, 3600L);
 	}
 	
-	public void refreshWorld(){
-			String s = getRefreshWorld();
-			getServer().broadcastMessage(ChatColor.RED + "Refreshing resource world...");
+	public void refreshWorld(String s){
+			getServer().broadcastMessage(ChatColor.RED + "Refreshing world...");
 			removePlayers(s);
 			unloadWorld(getServer().getWorld(s));
 			getServer().createWorld(new WorldCreator(s).environment(World.Environment.NORMAL));
@@ -137,13 +168,15 @@ public class world extends JavaPlugin {
 		Block b = w.getSpawnLocation().getBlock();
 		Block b1 = b.getRelative(BlockFace.UP, 1);
 		Block b2 = b1.getRelative(BlockFace.UP, 1);
-		Block b3 = b2.getRelative(BlockFace.NORTH, 1);
+		Block b3 = b2.getRelative(BlockFace.WEST, 1);
 		Block b4 = b3.getRelative(BlockFace.DOWN, 1);
 		b1.setTypeId(49);
 		b2.setTypeId(49);
 		b3.setTypeId(69);
 		b4.setType(Material.WALL_SIGN);
 		org.bukkit.block.Sign sign = (org.bukkit.block.Sign) b4.getState();
+		byte by = (0x2);
+		b3.setData(by);
 		sign.setLine(0, "[GOTO]");
 		sign.setLine(1, "[HOME]");
 	}

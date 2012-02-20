@@ -1,10 +1,18 @@
 package me.hammale.world;
 
+import java.io.BufferedReader;
+import java.io.DataInputStream;
 import java.io.File;
+import java.io.FileInputStream;
+import java.io.FileWriter;
+import java.io.InputStreamReader;
+import java.io.PrintWriter;
 import java.util.HashSet;
+import java.util.Scanner;
 import java.util.logging.Logger;
 
 import org.bukkit.ChatColor;
+import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
 import org.bukkit.WorldCreator;
@@ -24,11 +32,14 @@ public class world extends JavaPlugin {
 	public FileConfiguration config;
 	
 	public HashSet<String> removed = new HashSet<String>();
+	public HashSet<Location> stopFlow = new HashSet<Location>();
+	public HashSet<String> active = new HashSet<String>();
 	
 //	private final EpicPlayerListener playerListener = new EpicPlayerListener(this);
 //	private final EpicEntityListener entityListener = new EpicEntityListener(this);
 	private final NerdBlock nerdblock = new NerdBlock(this);
 	private final NerdPlayer nerdplayer = new NerdPlayer(this);
+	
 	
 	Logger log = Logger.getLogger("Minecraft");
 	
@@ -39,9 +50,12 @@ public class world extends JavaPlugin {
 		log.info("[NerdWorld] Version: " + pdfFile.getVersion() + " Enabled!");
 		checkWorld();
 		moniterRefresh();
+		makeFolders();
 		PluginManager pm = getServer().getPluginManager();
-		pm.registerEvent(Event.Type.SIGN_CHANGE, nerdblock, Priority.Normal, this);
+		pm.registerEvent(Event.Type.BLOCK_BREAK, nerdblock, Priority.Normal, this);
+		pm.registerEvent(Event.Type.BLOCK_FROMTO, nerdblock, Priority.Normal, this);
 		pm.registerEvent(Event.Type.PLAYER_INTERACT, nerdplayer, Priority.Normal, this);
+		pm.registerEvent(Event.Type.PLAYER_MOVE, nerdplayer, Priority.Normal, this);
 
 	}
 	
@@ -86,6 +100,171 @@ public class world extends JavaPlugin {
 			  System.err.println("Error: " + e.getMessage());
 			  return true;
 			}
+	}
+	
+
+	public void makeFolders(){
+		File file = new File("plugins/NerdWorld/gates"); 
+        if (!file.exists()) {
+        	file.mkdir();
+        }
+	}
+	
+	public void addGate(String s, Location l, BlockFace bf, HashSet<Location> locs, String target) {
+		if(l != null){
+			try{
+			File file = new File("plugins/NerdWorld/gates/" + s + ".dat");
+	        Scanner scan = null;  
+	        String str = null;  
+	  
+	        if (file.exists()) {
+	            scan = new java.util.Scanner(file);  
+	            str = scan.nextLine();  
+	            while (scan.hasNextLine()) {
+	                str = str.concat("\n" + scan.nextLine());  
+	            }  
+	        }
+	        PrintWriter out = new PrintWriter(new FileWriter(file, true));  
+			  int x = (int)l.getX();
+			  int y = (int)l.getY();
+			  int z = (int)l.getZ();
+			  
+			  str = (x + "," + y + "," + z + "," + l.getWorld().getName() + "," +  bf.toString());
+	        out.println(str);
+	        for(Location loc : locs){
+	        	Block lb = loc.getBlock();
+	        	World locw = loc.getWorld();
+	        	int lx = (int)lb.getX();
+				int ly = (int)lb.getY();
+				int lz = (int)lb.getZ();
+				str = (lx + "," + ly + "," + lz + "," + locw.getName());
+	        	out.println(str); 
+	        }
+	        str = ("TARGET:" + target);
+        	out.println(str);
+	        out.close();
+	        if(scan != null){
+	        	scan.close();
+	        }
+			}catch (Exception e){
+				e.printStackTrace();
+			}
+		}
+	}
+	
+	public boolean isValidGate(String s){
+		File file = new File("plugins/NerdWorld/gates/" + s + ".dat");
+        if (file.exists()) {
+        	return true;
+        }else{
+        	return false;
+        }
+	}
+	
+	public String readGateTarget(String s){
+		try{
+				  FileInputStream fstream = new FileInputStream("plugins/NerdWorld/gates/" + s + ".dat");
+				  DataInputStream in = new DataInputStream(fstream);
+				  BufferedReader br = new BufferedReader(new InputStreamReader(in));
+				  String strLine;
+				  while ((strLine = br.readLine()) != null && (!(strLine.contains("TARGET:")))){
+				  }
+				  in.close();
+				  br.close();
+				  fstream.close();
+				  return strLine;
+		}catch (Exception e){
+			  System.err.println("Error5: " + e.getMessage());
+			  }
+		return null;		
+	}
+	
+	public void removeGate(String s){
+		File file = new File("plugins/NerdWorld/gates/" + s + ".dat");
+        if (file.exists()) {
+        	file.delete();
+        }
+	}
+	
+	public Location readGateLoc(String s){
+		Location l = null;
+		try{
+				  FileInputStream fstream = new FileInputStream("plugins/NerdWorld/gates/" + s + ".dat");
+				  DataInputStream in = new DataInputStream(fstream);
+				  BufferedReader br = new BufferedReader(new InputStreamReader(in));
+				  String strLine;
+				  //while ((strLine = br.readLine()) != null){
+				  if ((strLine = br.readLine()) != null){
+					  String delims = ",";
+					  String[] cords = strLine.split(delims);
+		
+					  int x = Integer.parseInt(cords[0]);
+					  int y = Integer.parseInt(cords[1]);
+					  int z = Integer.parseInt(cords[2]);
+					  World w = getServer().getWorld(cords[3]);			  
+					  l = w.getBlockAt(x, y, z).getLocation();
+		
+				  }
+				  in.close();
+				  br.close();
+				  fstream.close();
+				  return l;
+		}catch (Exception e){
+			  System.err.println("Error1: " + e.getMessage());
+			  }
+		return null;		
+	}
+	
+	public HashSet<Location> readGateCords(String s){
+		HashSet<Location> cords = new HashSet<Location>();
+		try{
+				  FileInputStream fstream = new FileInputStream("plugins/NerdWorld/gates/" + s + ".dat");
+				  DataInputStream in = new DataInputStream(fstream);
+				  BufferedReader br = new BufferedReader(new InputStreamReader(in));
+				  String strLine = null;
+				  while ((strLine = br.readLine()) != null){
+					  String delims = ",";
+					  String[] cord = strLine.split(delims);
+					  if(!(cord[0].contains("TARGET:"))){
+						  int x = Integer.parseInt(cord[0]);
+						  int y = Integer.parseInt(cord[1]);
+						  int z = Integer.parseInt(cord[2]);
+						  World w = getServer().getWorld(cord[3]);				  
+						  if(w.getBlockAt(x,y,z).getLocation() != null){
+							  cords.add(w.getBlockAt(x,y,z).getLocation());
+						  }
+					  }	
+				  }
+				  in.close();
+				  br.close();
+				  fstream.close();
+				  return cords;
+		}catch (Exception e){
+			  e.printStackTrace();
+		}
+		return null;		
+	}
+	
+	public BlockFace readGateFace(String s){
+		BlockFace bf = null;
+		try{
+			  FileInputStream fstream = new FileInputStream("plugins/NerdWorld/gates/" + s + ".dat");
+			  DataInputStream in = new DataInputStream(fstream);
+			  BufferedReader br = new BufferedReader(new InputStreamReader(in));
+			  String strLine;
+			  if ((strLine = br.readLine()) != null){
+				  String delims = ",";
+				  String[] cords = strLine.split(delims);
+				  bf = BlockFace.valueOf(cords[4]);
+			  }
+			  in.close();
+			  br.close();
+			  fstream.close();
+			  return bf;
+		}catch (Exception e){
+			  System.err.println("Error3: " + e.getMessage());
+			  }
+		return null;		
 	}
 	
 	public int getRate(){
@@ -191,7 +370,7 @@ public class world extends JavaPlugin {
 			removed.remove(s);
 		}
 	}
-
+	
 	private void removePlayers(String s) {
 		World w = getServer().getWorld(s);
 		for(Player p : w.getPlayers()){

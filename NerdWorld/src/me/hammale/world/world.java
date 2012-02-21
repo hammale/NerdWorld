@@ -18,6 +18,8 @@ import org.bukkit.World;
 import org.bukkit.WorldCreator;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
+import org.bukkit.command.Command;
+import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
@@ -96,6 +98,47 @@ public class world extends JavaPlugin {
         	file.mkdir();
         }
 	}
+		
+	  public boolean onCommand(final CommandSender sender, Command cmd, String commandLabel, String[] args){
+			if(cmd.getName().equalsIgnoreCase("nw")){
+				if(args.length == 2){
+					if(args[0].equalsIgnoreCase("create")){
+						for(World w : getServer().getWorlds()){						
+							if(args[1].equalsIgnoreCase(w.getName())){
+								sender.sendMessage(ChatColor.RED + "Error! World already existst.");
+								return true;
+							}
+						}
+						getServer().createWorld(new WorldCreator(args[1]).environment(World.Environment.NORMAL));
+					}else if(args[0].equalsIgnoreCase("remove")){
+						if(getServer().getWorld(args[1]) != null){
+							getServer().unloadWorld(args[1], false);
+							 File dir = new File(args[1]);
+							 removeWorld(dir);
+						}else{
+							sender.sendMessage(ChatColor.RED + "Error! World doesn't exist.");
+							return true;
+						}
+					}
+				}
+			}
+			return true;	
+	  }
+	
+	  public boolean removeWorld(File dir){	 
+		  if (dir.isDirectory()) {
+				  String[] children = dir.list();
+				  for (int i=0; i<children.length; i++) {
+					  boolean success = removeWorld(new File(dir, children[i]));
+					  if (!success) {
+						  return false;
+					  }
+				  }
+		  }else{
+			  return false;
+		  }
+		return false;
+	  }
 	
 	public void addGate(String s, Location l, BlockFace bf, HashSet<Location> locs, String target) {
 		if(l != null){

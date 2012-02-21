@@ -5,3 +5,6 @@ commands:
   nerd:
     description:
     usage: |
+  nw:
+    description:
+    usage: |

@@ -20,11 +20,7 @@ import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.configuration.file.FileConfiguration;
 import org.bukkit.entity.Player;
-import org.bukkit.event.Event;
-import org.bukkit.event.Event.Priority;
-import org.bukkit.material.Sign;
 import org.bukkit.plugin.PluginDescriptionFile;
-import org.bukkit.plugin.PluginManager;
 import org.bukkit.plugin.java.JavaPlugin;
 
 public class world extends JavaPlugin {
@@ -34,11 +30,6 @@ public class world extends JavaPlugin {
 	public HashSet<String> removed = new HashSet<String>();
 	public HashSet<Location> stopFlow = new HashSet<Location>();
 	public HashSet<String> active = new HashSet<String>();
-	
-//	private final EpicPlayerListener playerListener = new EpicPlayerListener(this);
-//	private final EpicEntityListener entityListener = new EpicEntityListener(this);
-	private final NerdBlock nerdblock = new NerdBlock(this);
-	private final NerdPlayer nerdplayer = new NerdPlayer(this);
 	
 	
 	Logger log = Logger.getLogger("Minecraft");
@@ -51,12 +42,8 @@ public class world extends JavaPlugin {
 		checkWorld();
 		moniterRefresh();
 		makeFolders();
-		PluginManager pm = getServer().getPluginManager();
-		pm.registerEvent(Event.Type.BLOCK_BREAK, nerdblock, Priority.Normal, this);
-		pm.registerEvent(Event.Type.BLOCK_FROMTO, nerdblock, Priority.Normal, this);
-		pm.registerEvent(Event.Type.PLAYER_INTERACT, nerdplayer, Priority.Normal, this);
-		pm.registerEvent(Event.Type.PLAYER_MOVE, nerdplayer, Priority.Normal, this);
-
+		getServer().getPluginManager().registerEvents(new NerdBlock(this), this);
+		getServer().getPluginManager().registerEvents(new NerdPlayer(this), this);
 	}
 	
 	public void checkWorld(){

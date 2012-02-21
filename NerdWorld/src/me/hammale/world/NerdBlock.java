@@ -4,18 +4,21 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.block.Block;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.BlockBreakEvent;
 import org.bukkit.event.block.BlockFromToEvent;
-import org.bukkit.event.block.BlockListener;
 
-public class NerdBlock extends BlockListener {
+public class NerdBlock implements Listener {
 
 	 public final world plugin;
 	 
 	 public NerdBlock(world plugin){
 		 this.plugin = plugin;
+		 plugin.getServer().getPluginManager().registerEvents(this, plugin);
 	 }
 	 
+	 @EventHandler
 	 public void onBlockBreak(BlockBreakEvent e){	 
 		 if(e.getBlock().getType() == Material.WALL_SIGN){
 			 org.bukkit.block.Sign s = (org.bukkit.block.Sign) e.getBlock().getState();
@@ -43,8 +46,8 @@ public class NerdBlock extends BlockListener {
 		 }
 	 }
 	 
-	   @Override
-	    public void onBlockFromTo(BlockFromToEvent e) {
+	 @EventHandler
+	   public void onBlockFromTo(BlockFromToEvent e) {
 		   Block b = e.getBlock();
 		   if(b.getTypeId() == 8 || b.getTypeId() == 9){
 			   for(String gate : plugin.active){

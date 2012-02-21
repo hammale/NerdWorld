@@ -8,21 +8,23 @@ import org.bukkit.Material;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
 import org.bukkit.entity.Player;
+import org.bukkit.event.EventHandler;
+import org.bukkit.event.Listener;
 import org.bukkit.event.block.Action;
 import org.bukkit.event.player.PlayerInteractEvent;
-import org.bukkit.event.player.PlayerListener;
 import org.bukkit.event.player.PlayerMoveEvent;
-import org.bukkit.material.Lever;
 import org.bukkit.material.Button;
 
-public class NerdPlayer extends PlayerListener {
+public class NerdPlayer implements Listener {
 
 	 public final world plugin;
 	 
 	 public NerdPlayer(world plugin){
 		 this.plugin = plugin;
+		 plugin.getServer().getPluginManager().registerEvents(this, plugin);
 	 }
-	
+	 
+	 @EventHandler
 	 public void onPlayerMove(PlayerMoveEvent e){
 		 Block b = e.getPlayer().getLocation().getBlock().getRelative(BlockFace.UP, 1);
 		 if(b.getTypeId() == 8 || b.getTypeId() == 9){
@@ -41,6 +43,7 @@ public class NerdPlayer extends PlayerListener {
 		 }
 	 }
 	 
+	@EventHandler
 	public void onPlayerInteract(PlayerInteractEvent e){
 		final Player p = e.getPlayer();		
 	    if ((e.getAction() == Action.RIGHT_CLICK_BLOCK) && (e.getClickedBlock().getType() == Material.STONE_BUTTON && (e.getPlayer().getWorld() == plugin.getServer().getWorld(plugin.getRefreshWorld())) || e.getPlayer().getWorld() == plugin.getServer().getWorld(plugin.getRefreshWorld1()))) {

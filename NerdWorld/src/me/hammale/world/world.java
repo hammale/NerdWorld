@@ -15,6 +15,7 @@ import org.bukkit.ChatColor;
 import org.bukkit.Location;
 import org.bukkit.Material;
 import org.bukkit.World;
+import org.bukkit.World.Environment;
 import org.bukkit.WorldCreator;
 import org.bukkit.block.Block;
 import org.bukkit.block.BlockFace;
@@ -32,7 +33,6 @@ public class world extends JavaPlugin {
 	public HashSet<String> removed = new HashSet<String>();
 	public HashSet<Location> stopFlow = new HashSet<Location>();
 	public HashSet<String> active = new HashSet<String>();
-	
 	
 	Logger log = Logger.getLogger("Minecraft");
 	
@@ -109,20 +109,126 @@ public class world extends JavaPlugin {
 								return true;
 							}
 						}
+						sender.sendMessage(ChatColor.AQUA + "Creating world....");
 						getServer().createWorld(new WorldCreator(args[1]).environment(World.Environment.NORMAL));
-					}else if(args[0].equalsIgnoreCase("remove")){
+						sender.sendMessage(ChatColor.GREEN + "World complete!");
+					}else if(args[0].equalsIgnoreCase("unload")){
 						if(getServer().getWorld(args[1]) != null){
 							getServer().unloadWorld(args[1], false);
-							 File dir = new File(args[1]);
-							 removeWorld(dir);
+							sender.sendMessage(ChatColor.AQUA + "Unloading world...");
+							unloadPlayers(args[1]);
+							sender.sendMessage(ChatColor.GREEN + "World unloaded!");
 						}else{
 							sender.sendMessage(ChatColor.RED + "Error! World doesn't exist.");
 							return true;
 						}
+					}else if(args[0].equalsIgnoreCase("unplayer")){
+						sender.sendMessage(ChatColor.AQUA + "Removing all players on " + args[1] + "...");
+						unloadPlayers(args[1]);
+						sender.sendMessage(ChatColor.GREEN + "Players removed!");
+					}else if(args[0].equalsIgnoreCase("gate")){
+						if(args[1].equalsIgnoreCase("list")){
+							sender.sendMessage(ChatColor.GOLD + "<--- " + ChatColor.BLUE + "Gates" + ChatColor.GOLD + " --->");
+							HashSet<String> gates = getGates();
+							for(String s : gates){
+								String status = "Offline";
+								ChatColor acolor = ChatColor.RED;
+								if(s.contains(".dat")){
+									s = s.replace(".dat", "");
+								}
+								if(active.contains(s)){
+									status = "Active";
+									acolor = ChatColor.GREEN;
+								}
+								String target = readGateTarget(s).replace("TARGET:", "");
+								sender.sendMessage(ChatColor.DARK_AQUA + s + ChatColor.WHITE + " -> " + ChatColor.DARK_PURPLE + target + ChatColor.WHITE + " - " + acolor + status);
+							}
+						}
+					}
+					return true;
+			}else if(args.length == 3){
+				if(args[0].equalsIgnoreCase("create")){
+					for(World w : getServer().getWorlds()){
+						if(args[1].equalsIgnoreCase(w.getName	())){
+							sender.sendMessage(ChatColor.RED + "Error! World already existst.");
+							return true;
+						}
+					}
+					sender.sendMessage(ChatColor.AQUA + "Creating " + args[2] + " world...");
+					Environment env = Environment.NORMAL;
+					try{
+						env = Environment.valueOf(args[2]);
+					}catch(IllegalArgumentException e){
+						sender.sendMessage(ChatColor.RED + "Error invalid world type! Valid ones are: NORMAL, NETHER, THE_END.");
+						return true;
+					}
+					getServer().createWorld(new WorldCreator(args[1]).environment(env));
+					sender.sendMessage(ChatColor.GREEN + "World complete!");
+				}else if(args[0].equalsIgnoreCase("gate")){
+					if(args[1].equalsIgnoreCase("goto")){
+						if(args[2] != null){
+							sender.sendMessage(ChatColor.AQUA + "Teleporting to gate " + args[2] + "...");
+							
+						}
 					}
 				}
+				return true;
+			}else if(args.length == 4){
+				if(args[0].equalsIgnoreCase("create")){
+					for(World w : getServer().getWorlds()){					
+						if(args[1].equalsIgnoreCase(w.getName())){
+							sender.sendMessage(ChatColor.RED + "Error! World already existst.");
+							return true;
+						}
+					}
+					sender.sendMessage(ChatColor.AQUA + "Creating " + args[2] + " world with " + args[3] + " generator...");
+					Environment env = Environment.NORMAL;
+					try{
+						env = Environment.valueOf(args[2]);
+					}catch(IllegalArgumentException e){
+						sender.sendMessage(ChatColor.RED + "Error invalid world type! Valid ones are: NORMAL, NETHER, THE_END.");
+						return true;
+					}
+					getServer().createWorld(new WorldCreator(args[1]).environment(env).generator(args[3]));
+					sender.sendMessage(ChatColor.GREEN + "World complete!");
+				}
+				return true;
+			}else if(args.length == 1){	
+					if(args[0].equalsIgnoreCase("list")){
+						sender.sendMessage(ChatColor.GOLD + "<--- " + ChatColor.BLUE + "Loaded Worlds" + ChatColor.GOLD + " --->");
+						for(World w : getServer().getWorlds()){
+							String gen = null;
+							if(w.getGenerator() == null){
+								gen = "DEFAULT";
+							}else{
+								gen = w.getGenerator().toString();
+							}
+							if(w.getEnvironment() == Environment.NORMAL){
+								sender.sendMessage(ChatColor.AQUA + w.getName() + ChatColor.WHITE + " - " + ChatColor.DARK_GREEN + "NORMAL" + ChatColor.WHITE + " - " + ChatColor.LIGHT_PURPLE + "Chunk Gen: " + gen);
+							}else if(w.getEnvironment() == Environment.NETHER){
+								sender.sendMessage(ChatColor.AQUA + w.getName() + ChatColor.WHITE + " - " + ChatColor.RED + "NETHER" + ChatColor.WHITE + " - " + ChatColor.LIGHT_PURPLE + "Chunk Gen: " + gen);
+							}else if(w.getEnvironment() == Environment.THE_END){
+								sender.sendMessage(ChatColor.AQUA + w.getName() + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "END" + ChatColor.WHITE + " - " + ChatColor.LIGHT_PURPLE + "Chunk Gen: " + gen);
+							}
+						}
+						return true;
+					}else if(args[0].equalsIgnoreCase("help")){
+						PluginDescriptionFile pdfFile = this.getDescription();
+						sender.sendMessage(ChatColor.GOLD + "<--- " + ChatColor.BLUE + "NerdWorld Version: " + pdfFile.getVersion() + ChatColor.GOLD + " --->");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw list" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Lists all loaded worlds");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw create <world_name>" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Creates a normal world named <world_name>");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw create <world_name> [environment]" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Creates an <environment> world named <world_name>");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw create <world_name> [environment] [generator]" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Creates an <environment> world named <world_name> with a [generator] generator");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw unload <world_name>" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Unloads <world_name>");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw unplayer" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Removes all player's from <world_name>");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw gate list" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Lists all gates and there targets");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw gate goto <gate_name>" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "TP's you to <gate_name>");
+						return true;
+					}
+				}
+				return false;
 			}
-			return true;	
+			return true;
 	  }
 	
 	  public boolean removeWorld(File dir){	 
@@ -140,6 +246,18 @@ public class world extends JavaPlugin {
 		return false;
 	  }
 	
+	public HashSet<String> getGates(){
+		File dir = new File("plugins/NerdWorld/gates");
+		HashSet<String> list = new HashSet<String>();
+		if (dir.isDirectory()) {
+		  String[] files = dir.list();
+		  for (String file : files) {
+		      list.add(file);
+		  }
+		}
+		return list;
+	}
+	  
 	public void addGate(String s, Location l, BlockFace bf, HashSet<Location> locs, String target) {
 		if(l != null){
 			try{
@@ -362,7 +480,7 @@ public class world extends JavaPlugin {
 	}
 	
 	public void refreshWorld(String s){
-			getServer().broadcastMessage(ChatColor.RED + "Refreshing world...");
+			getServer().broadcastMessage(ChatColor.RED + "Refreshing " + s + "...");
 			removePlayers(s);
 			unloadWorld(getServer().getWorld(s));
 			getServer().createWorld(new WorldCreator(s).environment(World.Environment.NORMAL));
@@ -372,41 +490,65 @@ public class world extends JavaPlugin {
 			getServer().broadcastMessage(ChatColor.GREEN + "Refresh complete!");
 	}
 	
-	public void addPortal(String s){
-		World w = getServer().getWorld(s);
-		Block b = w.getSpawnLocation().getBlock();
-		Block b1 = b.getRelative(BlockFace.UP, 1);
-		Block b2 = b1.getRelative(BlockFace.UP, 1);
-		Block b3 = b2.getRelative(BlockFace.WEST, 1);
-		Block b4 = b3.getRelative(BlockFace.DOWN, 1);
-		b1.setTypeId(49);
-		b2.setTypeId(49);
-		b3.setTypeId(69);
-		b4.setType(Material.WALL_SIGN);
-		org.bukkit.block.Sign sign = (org.bukkit.block.Sign) b4.getState();
-		byte by = (0x2);
-		b3.setData(by);
-		sign.setLine(0, "[GOTO]");
-		sign.setLine(1, "[HOME]");
+	public void addPortal(final String s){
+		getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
+		    public void run() {		
+				World w = getServer().getWorld(s);
+				Block b = w.getSpawnLocation().getBlock();
+				Block b1 = b.getRelative(BlockFace.UP, 1);
+				Block b2 = b1.getRelative(BlockFace.UP, 1);
+				Block b3 = b2.getRelative(BlockFace.WEST, 1);
+				Block b4 = b3.getRelative(BlockFace.DOWN, 1);
+				b1.setTypeId(49);
+				b2.setTypeId(49);
+				b3.setTypeId(69);
+				b4.setType(Material.WALL_SIGN);
+				org.bukkit.block.Sign sign = (org.bukkit.block.Sign) b4.getState();
+				byte by = (0x2);
+				b3.setData(by);
+				sign.setLine(0, "[GOTO]");
+				sign.setLine(1, "[HOME]");
+				refreshWorld(s);
+		    }
+		}, 600L);
 	}
 	
 	private void addBackPlayers(String s) {
-		for(String name : removed){
-			Player p = getServer().getPlayer(name);
-			if(p.isOnline()){
-				p.teleport(getServer().getWorld(s).getSpawnLocation());
-				p.sendMessage(ChatColor.BLUE + "Welcome back!");
+		if(s != null){
+			for(String name : removed){
+				Player p = getServer().getPlayer(name);
+				if(p.isOnline()){
+					p.teleport(getServer().getWorld(s).getSpawnLocation());
+					p.sendMessage(ChatColor.BLUE + "Welcome back!");
+				}
+				if(removed.contains(s)){
+					removed.remove(s);
+				}
 			}
-			removed.remove(s);
+		}
+	}
+	
+	public void unloadPlayers(String s) {
+		World w = getServer().getWorld(s);
+		if(w!= null){
+			for(Player p : w.getPlayers()){
+				if(p != null){
+					p.sendMessage(ChatColor.BLUE + "World unloading...time for you to leave!");
+					p.teleport(getServer().getWorlds().get(0).getSpawnLocation());	
+					removed.add(p.getName());
+				}
+			}
 		}
 	}
 	
 	private void removePlayers(String s) {
 		World w = getServer().getWorld(s);
 		for(Player p : w.getPlayers()){
-			p.sendMessage(ChatColor.BLUE + "World refreshing...time for you to leave!");
-			p.teleport(getServer().getWorlds().get(0).getSpawnLocation());	
-			removed.add(p.getName());
+			if(p != null){
+				p.sendMessage(ChatColor.BLUE + "World refreshing...time for you to leave!");
+				p.teleport(getServer().getWorlds().get(0).getSpawnLocation());	
+				removed.add(p.getName());
+			}
 		}
 	}
 
@@ -427,5 +569,5 @@ public class world extends JavaPlugin {
 	            }
 	        } 
 	        return dir.delete();
-	    } 
+	    }
 }

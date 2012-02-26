@@ -46,11 +46,12 @@ public class world extends JavaPlugin {
 		makeFolders();
 		getServer().getPluginManager().registerEvents(new NerdBlock(this), this);
 		getServer().getPluginManager().registerEvents(new NerdPlayer(this), this);
+		getServer().getPluginManager().registerEvents(new NerdEntity(this), this);
 	}
 	
 	public void checkWorld(){
 		if(getServer().getWorld(getRefreshWorld()) == null){
-			getServer().createWorld(new WorldCreator(getRefreshWorld()).environment(World.Environment.NORMAL));
+			getServer().createWorld(new WorldCreator(getRefreshWorld()).environment(World.Environment.NORMAL).generator("MineralVein"));
 			addPortal(getRefreshWorld());
 		}
 		if(getServer().getWorld(getRefreshWorld1()) == null){
@@ -483,7 +484,11 @@ public class world extends JavaPlugin {
 			getServer().broadcastMessage(ChatColor.RED + "Refreshing " + s + "...");
 			removePlayers(s);
 			unloadWorld(getServer().getWorld(s));
-			getServer().createWorld(new WorldCreator(s).environment(World.Environment.NORMAL));
+			if(s.equals(getRefreshWorld())){
+				getServer().createWorld(new WorldCreator(s).environment(World.Environment.NORMAL).generator("MineralVein"));
+			}else{
+				getServer().createWorld(new WorldCreator(s).environment(World.Environment.NORMAL));
+			}
 			addBackPlayers(s);
 			removed.clear();
 			addPortal(s);

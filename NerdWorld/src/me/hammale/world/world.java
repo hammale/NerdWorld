@@ -68,9 +68,9 @@ public class world extends JavaPlugin {
 		    String path1 = "RefreshWorld";
 		    String path2 = "RefreshRateSecond";
 		    String path3 = "RefreshWorldSecond";
-		    config.addDefault(path, 720);
+		    config.addDefault(path, 10);
 		    config.addDefault(path1, "mobs");
-		    config.addDefault(path2, 4320);
+		    config.addDefault(path2, 60);
 		    config.addDefault(path3, "nomobs");
 		    config.options().copyDefaults(true);
 		    saveConfig();

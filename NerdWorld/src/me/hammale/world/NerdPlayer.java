@@ -35,7 +35,16 @@ public class NerdPlayer implements Listener {
 							   e.getPlayer().sendMessage(ChatColor.LIGHT_PURPLE + "Teleporting...");
 							   String target = plugin.readGateTarget(gate);
 							   target = target.replace("TARGET:", "");
-							   e.getPlayer().teleport(plugin.readGateLoc(target));
+							   if(target.contains("WORLD:")){
+								   target = target.replace("WORLD:", "");
+								   if(plugin.getServer().getWorld(target) != null){
+									  e.getPlayer().teleport(plugin.getServer().getWorld(target).getSpawnLocation()); 
+								   }else{
+									   e.getPlayer().sendMessage(ChatColor.RED + "Invalid destination!");
+								   }
+							   }else{
+								   e.getPlayer().teleport(plugin.readGateLoc(target));
+							   }
 						   }
 					   }
 				   }

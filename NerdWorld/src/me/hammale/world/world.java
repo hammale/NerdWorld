@@ -22,6 +22,8 @@ import org.bukkit.block.BlockFace;
 import org.bukkit.command.Command;
 import org.bukkit.command.CommandSender;
 import org.bukkit.configuration.file.FileConfiguration;
+import org.bukkit.entity.Entity;
+import org.bukkit.entity.LivingEntity;
 import org.bukkit.entity.Player;
 import org.bukkit.plugin.PluginDescriptionFile;
 import org.bukkit.plugin.java.JavaPlugin;
@@ -47,6 +49,18 @@ public class world extends JavaPlugin {
 		getServer().getPluginManager().registerEvents(new NerdBlock(this), this);
 		getServer().getPluginManager().registerEvents(new NerdPlayer(this), this);
 		getServer().getPluginManager().registerEvents(new NerdEntity(this), this);
+		clearMobs();
+	}
+	
+	public void clearMobs(){
+		World w = getServer().getWorld(getRefreshWorld1());
+		for(Entity e : w.getEntities()){
+			if(e instanceof LivingEntity){
+				if(!(e instanceof Player)){
+					((LivingEntity) e).setHealth(0);
+				}
+			}
+		}
 	}
 	
 	public void checkWorld(){
@@ -123,6 +137,8 @@ public class world extends JavaPlugin {
 							sender.sendMessage(ChatColor.RED + "Error! World doesn't exist.");
 							return true;
 						}
+					}else if(args[0].equalsIgnoreCase("load")){
+						getServer().createWorld(new WorldCreator(args[1]).environment(World.Environment.NORMAL));
 					}else if(args[0].equalsIgnoreCase("unplayer")){
 						sender.sendMessage(ChatColor.AQUA + "Removing all players on " + args[1] + "...");
 						unloadPlayers(args[1]);
@@ -145,6 +161,16 @@ public class world extends JavaPlugin {
 								sender.sendMessage(ChatColor.DARK_AQUA + s + ChatColor.WHITE + " -> " + ChatColor.DARK_PURPLE + target + ChatColor.WHITE + " - " + acolor + status);
 							}
 						}
+					}else if(args[0].equalsIgnoreCase("goto")){
+						if(sender instanceof Player){
+							Player p = (Player) sender;
+							p.sendMessage(ChatColor.GREEN + "Teleporting...");
+							if(getServer().getWorld(args[1]).getSpawnLocation() != null){
+								p.teleport(getServer().getWorld(args[1]).getSpawnLocation());
+							}else{
+								p.sendMessage(ChatColor.RED + "World not found!");
+							}
+						}	
 					}
 					return true;
 			}else if(args.length == 3){
@@ -222,9 +248,20 @@ public class world extends JavaPlugin {
 						sender.sendMessage(ChatColor.DARK_GREEN + "/nw create <world_name> [environment] [generator]" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Creates an <environment> world named <world_name> with a [generator] generator");
 						sender.sendMessage(ChatColor.DARK_GREEN + "/nw unload <world_name>" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Unloads <world_name>");
 						sender.sendMessage(ChatColor.DARK_GREEN + "/nw unplayer" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Removes all player's from <world_name>");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw setspawn" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Sets your world's spawn to your location");
+						sender.sendMessage(ChatColor.DARK_GREEN + "/nw goto <world name>" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "TP's you to <world name>");
 						sender.sendMessage(ChatColor.DARK_GREEN + "/nw gate list" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "Lists all gates and there targets");
-						sender.sendMessage(ChatColor.DARK_GREEN + "/nw gate goto <gate_name>" + ChatColor.WHITE + " - " + ChatColor.DARK_AQUA + "TP's you to <gate_name>");
 						return true;
+					}else if(args[0].equalsIgnoreCase("setspawn")){
+						if(sender instanceof Player){
+							Player p = (Player) sender;
+							int x = (int) p.getLocation().getX();
+							int y = (int) p.getLocation().getY();
+							int z = (int) p.getLocation().getZ();
+							p.getWorld().setSpawnLocation(x, y, z);
+							p.sendMessage(ChatColor.GREEN + "Spawn set!");
+							return true;
+						}
 					}
 				}
 				return false;
@@ -344,14 +381,19 @@ public class world extends JavaPlugin {
 				  String strLine;
 				  //while ((strLine = br.readLine()) != null){
 				  if ((strLine = br.readLine()) != null){
-					  String delims = ",";
-					  String[] cords = strLine.split(delims);
-		
-					  int x = Integer.parseInt(cords[0]);
-					  int y = Integer.parseInt(cords[1]);
-					  int z = Integer.parseInt(cords[2]);
-					  World w = getServer().getWorld(cords[3]);			  
-					  l = w.getBlockAt(x, y, z).getLocation();
+					  if(strLine.contains("WORLD:")){
+						  strLine.replace("WORLD:", "");
+						  l = getServer().getWorld(strLine).getSpawnLocation();
+					  }else{
+						  String delims = ",";
+						  String[] cords = strLine.split(delims);
+			
+						  int x = Integer.parseInt(cords[0]);
+						  int y = Integer.parseInt(cords[1]);
+						  int z = Integer.parseInt(cords[2]);
+						  World w = getServer().getWorld(cords[3]);			  
+						  l = w.getBlockAt(x, y, z).getLocation();
+					  }
 		
 				  }
 				  in.close();
@@ -497,25 +539,32 @@ public class world extends JavaPlugin {
 	
 	public void addPortal(final String s){
 		getServer().getScheduler().scheduleSyncDelayedTask(this, new Runnable() {
-		    public void run() {		
+		    public void run() {
 				World w = getServer().getWorld(s);
 				Block b = w.getSpawnLocation().getBlock();
+				while(b.getTypeId() != 0){
+					b = b.getRelative(BlockFace.UP);
+				}
+				b = b.getRelative(BlockFace.DOWN, 1);
 				Block b1 = b.getRelative(BlockFace.UP, 1);
 				Block b2 = b1.getRelative(BlockFace.UP, 1);
 				Block b3 = b2.getRelative(BlockFace.WEST, 1);
 				Block b4 = b3.getRelative(BlockFace.DOWN, 1);
 				b1.setTypeId(49);
 				b2.setTypeId(49);
-				b3.setTypeId(69);
+				b3.setTypeIdAndData(77, (byte) 3, true);
+				//button.setFacingDirection(BlockFace.EAST);
 				b4.setType(Material.WALL_SIGN);
+				b4.setData((byte) 3);
 				org.bukkit.block.Sign sign = (org.bukkit.block.Sign) b4.getState();
-				byte by = (0x2);
-				b3.setData(by);
+				//byte by = (0x1);
+				//b3.setData(by);
 				sign.setLine(0, "[GOTO]");
 				sign.setLine(1, "[HOME]");
-				refreshWorld(s);
+				
+				//org.bukkit.material.Button button = (org.bukkit.material.Button) b3.getState().getData();
 		    }
-		}, 600L);
+		}, 300L);
 	}
 	
 	private void addBackPlayers(String s) {
@@ -549,7 +598,7 @@ public class world extends JavaPlugin {
 	private void removePlayers(String s) {
 		World w = getServer().getWorld(s);
 		for(Player p : w.getPlayers()){
-			if(p != null){
+			if(p != null && p.isOnline() && (!p.isDead())){
 				p.sendMessage(ChatColor.BLUE + "World refreshing...time for you to leave!");
 				p.teleport(getServer().getWorlds().get(0).getSpawnLocation());	
 				removed.add(p.getName());

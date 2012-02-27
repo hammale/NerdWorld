@@ -46,7 +46,8 @@ public class NerdPlayer implements Listener {
 	@EventHandler
 	public void onPlayerInteract(PlayerInteractEvent e){
 		final Player p = e.getPlayer();		
-	    if ((e.getAction() == Action.RIGHT_CLICK_BLOCK) && (e.getClickedBlock().getType() == Material.STONE_BUTTON && (e.getPlayer().getWorld() == plugin.getServer().getWorld(plugin.getRefreshWorld())) || e.getPlayer().getWorld() == plugin.getServer().getWorld(plugin.getRefreshWorld1()))) {
+	    if ((e.getAction() == Action.RIGHT_CLICK_BLOCK) && (e.getClickedBlock().getType() == Material.STONE_BUTTON && (e.getPlayer().getWorld() == plugin.getServer().getWorld(plugin.getRefreshWorld()) || e.getPlayer().getWorld() == plugin.getServer().getWorld(plugin.getRefreshWorld1())))) {
+	    	if(e.getClickedBlock().getType() == Material.STONE_BUTTON){
 	    	Button l = (Button) e.getClickedBlock().getState().getData();
 	    	Block initial = e.getClickedBlock().getRelative(l.getAttachedFace());
 	    	if(initial.getTypeId() == 49){	
@@ -62,8 +63,7 @@ public class NerdPlayer implements Listener {
 	    	    					p.teleport(plugin.getServer().getWorlds().get(0).getSpawnLocation());
 	    					    }
 	    					}, 30L);
-	    				}	
-	    				else if(s.getLine(0).equals("[GOTO]") && s.getLine(1) != null && s.getLine(1).contains("[") && s.getLine(1).contains("]")){ 
+	    				}else if(s.getLine(0).equals("[GOTO]") && s.getLine(1) != null && s.getLine(1).contains("[") && s.getLine(1).contains("]")){ 
 	    					String s1 = s.getLine(1).replace("[", "");
 	    					final String s2 = s1.replace("]", "");
 	    					p.sendMessage(ChatColor.GOLD + "Gate opened!");
@@ -71,16 +71,24 @@ public class NerdPlayer implements Listener {
 	    					    public void run() {
 	    	    					p.teleport(plugin.getServer().getWorld(s2).getSpawnLocation());
 	    					    }
-	    					}, 30L);
+	    					}, 15L);
 	    				}
 	    			}
 	    		}
 	    	}
+	    }	
 	    }else if ((e.getAction() == Action.RIGHT_CLICK_BLOCK) && (e.getClickedBlock().getType() == Material.STONE_BUTTON)) {
 	    	Button l = (Button) e.getClickedBlock().getState().getData();	
 	    	final BlockFace bf = l.getAttachedFace();
 	    	BlockFace left = getLeft(bf);
 	    	BlockFace right = getRight(bf);
+	    	
+	    	Block stemp = e.getClickedBlock().getRelative(BlockFace.DOWN, 1);
+	    	org.bukkit.block.Sign stemp1 = (org.bukkit.block.Sign) stemp.getState();
+			String from1 = stemp1.getLine(0).replace("[", "");
+			final String from = from1.replace("]", "");
+			String to1 = stemp1.getLine(2).replace("[", "");
+			final String to = to1.replace("]", "");
 	    	
 	    	final Block initial = e.getClickedBlock().getRelative(l.getAttachedFace());
 	    	if(initial.getTypeId() == 49){
@@ -90,20 +98,82 @@ public class NerdPlayer implements Listener {
 	    			Block sign = e.getClickedBlock().getRelative(BlockFace.DOWN, 1);
 	    			if(sign.getType() == Material.WALL_SIGN){
 	    				org.bukkit.block.Sign s = (org.bukkit.block.Sign) sign.getState();
-//	    				if(s.getLine(0).equals("[GOTO]") && s.getLine(1).equals("[HOME]")){
-//	    					p.sendMessage(ChatColor.GREEN + "Teleporting to " + plugin.getServer().getWorlds().get(0).getName() + "...");
-//	    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
-//	    					    public void run() {
-//	    	    					p.teleport(plugin.getServer().getWorlds().get(0).getSpawnLocation());
-//	    					    }
-//	    					}, 30L);
-//	    				}	
-//	    				else 
-	    					if(s.getLine(0) != null && s.getLine(0).contains("[") && s.getLine(0).contains("]") && s.getLine(1).equals("[GOTO]") && s.getLine(2) != null && s.getLine(2).contains("[") && s.getLine(2).contains("]")){ 
-	    					String from1 = s.getLine(0).replace("[", "");
-	    					final String from = from1.replace("]", "");
-	    					String to1 = s.getLine(2).replace("[", "");
-	    					final String to = to1.replace("]", "");
+    					if(s.getLine(1).equals("[GOTO WORLD]") && s.getLine(2) != null && s.getLine(2).contains("[") && s.getLine(2).contains("]")){ 
+    						if(checkGate(initial, right, left, bf)){
+	    						if((!plugin.isValidGate(from)) && p.isOp()){
+		    						String s1 = s.getLine(2).replace("[", "");
+			    					final String s2 = s1.replace("]", "");
+			    					p.sendMessage(ChatColor.GOLD + "Gate opened!");    				
+			    	    			
+									Location gatel = initial.getRelative(BlockFace.DOWN).getRelative(left, 3).getLocation();
+									String to2 = "WORLD:" + to;
+	    							plugin.addGate(from, gatel, bf, innerGate(initial, bf), to2);
+	    							p.sendMessage(ChatColor.GREEN + "Gate successfully created!");
+	    			
+				    					p.sendMessage(ChatColor.GREEN + "Teleporting to " + to + "...");
+				    					addBump1(initial, bf);
+				    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+				    							public void run() {
+				    								addBump2(initial, bf);
+				    								plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+						    							public void run() {
+						    								removeBump2(initial, bf);
+						    								plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+								    							public void run() {												    					
+								    								removeBump1(initial, bf);
+											    					plugin.active.add(from);//TODO: come back!
+											    					activateGate(initial, bf);
+											    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+											    					    public void run() {
+											    					    	clearGate(initial, bf);
+													    					plugin.active.remove(from);
+											    					    }
+											    					}, 600L);
+								    							}
+									    					}, 5L);
+						    							}
+						    					}, 8L);
+				    							}
+				    					}, 5L);					    				
+		
+	    						}else if(plugin.isValidGate(from)){
+			    					p.sendMessage(ChatColor.GREEN + "Teleporting to " + to + "...");
+			    					addBump1(initial, bf);
+			    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+			    							public void run() {
+			    								addBump2(initial, bf);
+			    								plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+					    							public void run() {
+					    								removeBump2(initial, bf);
+					    								plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+							    							public void run() {												    					
+							    								removeBump1(initial, bf);
+										    					plugin.active.add(from);
+										    					activateGate(initial, bf);
+										    					plugin.getServer().getScheduler().scheduleSyncDelayedTask(plugin, new Runnable() {
+										    					    public void run() {
+										    					    	clearGate(initial, bf);
+												    					plugin.active.remove(from);
+										    					    }
+										    					}, 600L);
+							    							}
+								    					}, 5L);
+					    							}
+					    					}, 8L);
+			    							}
+			    					}, 5L);	
+	    						}else{
+	    							p.sendMessage(ChatColor.RED + "Gate not active!");
+	    						}
+    						}else{
+    							p.sendMessage(ChatColor.RED + "Invalid design!");
+    						}
+	    	    			
+	    				}else if(s.getLine(0) != null && s.getLine(0).contains("[") && s.getLine(0).contains("]") && s.getLine(1).equals("[GOTO]") && s.getLine(2) != null && s.getLine(2).contains("[") && s.getLine(2).contains("]")){ 
+
+	    					
+	
+	    					
 	    					if(checkGate(initial, right, left, bf)){
 	    						if(!(plugin.active.contains(to))){
 		    						if(plugin.isValidGate(from)){
